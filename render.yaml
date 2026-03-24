@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: graph-query-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: CORS_ORIGINS
+        value: https://YOUR_FRONTEND_URL
+      - key: DATA_DIR
+        value: /data
+

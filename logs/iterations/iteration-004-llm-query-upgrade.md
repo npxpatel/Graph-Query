@@ -1,0 +1,25 @@
+# Iteration 004 - LLM Query Upgrade
+
+- **goal**: replace rule-based query intent routing with strict JSON LLM planning over the real `data-entity` dataset.
+- **prompt(s) used**:
+  - enforce JSON-only output for planner
+  - include explicit allowed tables/columns and operator constraints
+  - request operation selection (`aggregate`, `trace_flow`, `anomaly_check`, `lookup`)
+- **debugging steps**:
+  - discovered old planner limited to keyword heuristics and fixed intents
+  - added parser retry path for malformed LLM outputs
+  - introduced plan safety guardrails to reject disallowed table/column references
+  - updated SQL compiler to support metric-alias sorting and validated joins
+  - adjusted tests to mock LLM planner outputs for deterministic CI behavior
+- **what changed**:
+  - Gemini REST client and env-driven provider config
+  - strict plan schema (`StructuredQuery`) with filters/metrics/sort primitives
+  - data-entity JSONL ingestion into canonical SQL tables and `flow_links`
+  - validated SQL compiler + trace executor
+  - chat UI now displays structured plan and evidence, highlights traced nodes
+- **before/after result**:
+  - before: heuristic keyword mapping with narrow query coverage
+  - after: LLM-assisted planning, guarded deterministic execution, broader NL handling
+- **next hypothesis**:
+  - improve planner prompt with few-shot examples for harder joins and anomaly descriptions
+  - add optional streaming responses once baseline deployment is stable

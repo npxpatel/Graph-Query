@@ -1,0 +1,22 @@
+# Iteration 006 - LLM Direct SQL Flow
+
+- **goal**: simplify backend flow to: user query -> LLM (schema + guardrail context) -> SQL or unsupported-message -> execute SQL -> return dataset-backed response.
+- **prompt(s) used**:
+  - require LLM output keys: `decision`, `sql_query`, `unsupported_message`, `confidence`, `reasoning_summary`
+  - enforce unsupported-domain message format for off-topic requests
+  - request single safe `SELECT` SQL when query is supported
+- **debugging steps**:
+  - removed local deterministic fallback planner behavior so LLM is mandatory
+  - removed legacy guardrail module and query-engine module references
+  - added runtime SQL safety gate in API (single statement, `SELECT` only, deny DDL/DML)
+  - updated tests to mock SQL-return planner outputs and unsupported decisions
+- **what changed**:
+  - `StructuredQuery` simplified to SQL/unsupported response contract
+  - planner prompt rewritten for SQL generation path
+  - backend query endpoint executes LLM SQL directly on registered dataset tables
+  - deleted `backend/app/guardrails.py` and `backend/app/query_engine.py`
+- **before/after result**:
+  - before: LLM JSON operation plan + deterministic compiler/executor pipeline
+  - after: LLM returns SQL directly (or unsupported message), backend executes and returns evidence rows
+- **next hypothesis**:
+  - add optional SQL linting/explain checks for better performance and safer complex joins

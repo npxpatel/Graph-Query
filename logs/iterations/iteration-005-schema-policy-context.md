@@ -1,0 +1,23 @@
+# Iteration 005 - Schema and Policy Context Alignment
+
+- **goal**: align backend logic to use external schema dictionary and guardrail policy context with the LLM planner, and prioritize assignment dataset path naming.
+- **prompt(s) used**:
+  - include authoritative schema dictionary in planner prompt
+  - include explicit guardrail policy text in planner prompt
+  - maintain deterministic backend plan validation and safe SQL execution
+- **debugging steps**:
+  - detected dataset path mismatch (`sap-02c-data` requested vs actual `sap-o2c-data`)
+  - updated source-data loader to resolve preferred + alternate dataset directory names
+  - backend tests failed after path shift due missing legacy `data/raw` fixture, updated tests to source from resolved canonical dataset
+  - reran backend tests and frontend build to confirm no regressions
+- **what changed**:
+  - added `backend/app/prompts/schema_dictionary.json`
+  - added `backend/app/prompts/guardrail_policy.md`
+  - wired planner to load and inject schema + policy context each query
+  - updated config/env defaults to `sap-o2c-data` and prompt file paths
+  - updated source loader fallback logic and tests for robust dataset discovery
+- **before/after result**:
+  - before: planner only used runtime table registry and static prompt text
+  - after: planner uses dedicated schema/policy files plus runtime registry, while backend retains hard guardrails
+- **next hypothesis**:
+  - generate schema dictionary dynamically at startup (and cache it) to keep prompts synchronized as source tables evolve

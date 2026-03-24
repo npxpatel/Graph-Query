@@ -1,0 +1,123 @@
+{
+  "domain": "order_to_cash",
+  "description": "Canonical schema dictionary for NL-to-structured-query planning.",
+  "tables": {
+    "sales_orders": {
+      "purpose": "Sales order headers",
+      "primary_keys": ["order_id"],
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "currency",
+        "total_net_amount"
+      ]
+    },
+    "sales_order_items": {
+      "purpose": "Sales order line items",
+      "primary_keys": ["order_item_id"],
+      "foreign_keys": { "order_id": "sales_orders.order_id", "product_id": "products.product_id" },
+      "columns": [
+        "order_item_id",
+        "order_id",
+        "sales_order_item",
+        "product_id",
+        "quantity",
+        "amount",
+        "transactionCurrency",
+        "productionPlant",
+        "storageLocation"
+      ]
+    },
+    "deliveries": {
+      "purpose": "Outbound deliveries",
+      "primary_keys": ["delivery_id"],
+      "foreign_keys": { "order_id": "sales_orders.order_id" },
+      "columns": [
+        "delivery_id",
+        "order_id",
+        "plant_id",
+        "delivery_date",
+        "status",
+        "deliveryDocumentItem",
+        "actualDeliveryQuantity"
+      ]
+    },
+    "billing_documents": {
+      "purpose": "Billing / invoice documents",
+      "primary_keys": ["invoice_id"],
+      "foreign_keys": {
+        "order_id": "sales_orders.order_id",
+        "delivery_id": "deliveries.delivery_id"
+      },
+      "columns": [
+        "invoice_id",
+        "order_id",
+        "delivery_id",
+        "invoice_date",
+        "status",
+        "is_cancelled",
+        "accounting_document",
+        "amount",
+        "currency"
+      ]
+    },
+    "payments": {
+      "purpose": "AR clearing / payment records",
+      "primary_keys": ["payment_id"],
+      "foreign_keys": { "invoice_id": "billing_documents.invoice_id" },
+      "columns": [
+        "payment_id",
+        "invoice_id",
+        "payment_date",
+        "amount",
+        "status",
+        "companyCode",
+        "fiscalYear"
+      ]
+    },
+    "customers": {
+      "purpose": "Customer / business partner master",
+      "primary_keys": ["customer_id"],
+      "columns": [
+        "customer_id",
+        "customer_name",
+        "segment",
+        "region",
+        "businessPartnerCategory",
+        "businessPartnerIsBlocked"
+      ]
+    },
+    "products": {
+      "purpose": "Product master and descriptions",
+      "primary_keys": ["product_id"],
+      "columns": [
+        "product_id",
+        "product_name",
+        "category",
+        "productType",
+        "baseUnit"
+      ]
+    },
+    "flow_links": {
+      "purpose": "Materialized process links for end-to-end flow analytics",
+      "columns": [
+        "order_id",
+        "delivery_id",
+        "invoice_id",
+        "payment_id",
+        "customer_id",
+        "product_id"
+      ]
+    }
+  },
+  "relationship_examples": [
+    "sales_orders.order_id -> sales_order_items.order_id",
+    "sales_orders.order_id -> deliveries.order_id",
+    "deliveries.delivery_id -> billing_documents.delivery_id",
+    "billing_documents.invoice_id -> payments.invoice_id",
+    "sales_order_items.product_id -> products.product_id",
+    "sales_orders.customer_id -> customers.customer_id"
+  ]
+}

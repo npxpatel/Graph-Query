@@ -150,10 +150,84 @@ body {
 
 /* ——— Main body ——— */
 .body {
+  position: relative;
   flex: 1;
   display: flex;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Full-area overlay until /graph/full succeeds */
+.graph-bootstrap-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.graph-bootstrap-card {
+  text-align: center;
+  max-width: 22rem;
+  padding: 1.5rem 1.75rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.graph-bootstrap-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 1rem;
+  border: 3px solid #e5e5e5;
+  border-top-color: #0a0a0a;
+  border-radius: 50%;
+  animation: graph-spin 0.75s linear infinite;
+}
+
+@keyframes graph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.graph-bootstrap-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.graph-bootstrap-title--error {
+  color: #b91c1c;
+}
+
+.graph-bootstrap-sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.graph-bootstrap-retry {
+  margin-top: 1rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  border: none;
+  background: #0a0a0a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.graph-bootstrap-retry:hover {
+  background: #262626;
 }
 
 .graph-pane {
@@ -658,6 +732,11 @@ body {
 .chat-status__dot--busy {
   background: #eab308;
   animation: pulse 1s ease-in-out infinite;
+}
+
+.chat-status__dot--error {
+  background: #ef4444;
+  animation: none;
 }
 
 @keyframes pulse {

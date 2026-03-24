@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
@@ -164,7 +164,43 @@ export default function App() {
   const [graphMinimized, setGraphMinimized] = useState(false);
   const [showGranularOverlay, setShowGranularOverlay] = useState(true);
   const [sampleQueries, setSampleQueries] = useState(FALLBACK_SAMPLE_QUERIES);
+  /** Initial graph fetch from backend — blocks main UI until ready or user retries after error */
+  const [graphLoading, setGraphLoading] = useState(true);
+  const [graphLoadError, setGraphLoadError] = useState(null);
   const fgRef = useRef();
+
+  const loadFullGraph = useCallback(async () => {
+    setGraphLoading(true);
+    setGraphLoadError(null);
+    try {
+      const res = await fetch(`${API_BASE}/graph/full`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+      const edges = Array.isArray(data?.edges) ? data.edges : [];
+      setGraph({ nodes, edges });
+      setFullGraphCache({ nodes, edges });
+    } catch {
+      setGraph({ nodes: [], edges: [] });
+      setGraphLoadError("Could not load the graph. Check that the API is running and CORS allows this origin.");
+    } finally {
+      setGraphLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFullGraph();
+  }, [loadFullGraph]);
+
+  useEffect(() => {
+    if (graphLoading || graphLoadError) return;
+    const id = requestAnimationFrame(() => {
+      fgRef.current?.zoomToFit?.(400, 50);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [graphLoading, graphLoadError]);
 
   useEffect(() => {
     fetch(`${API_BASE}/examples`)
@@ -176,16 +212,6 @@ export default function App() {
         }
       })
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/graph/full`)
-      .then((r) => r.json())
-      .then((data) => {
-        setGraph(data);
-        setFullGraphCache(data);
-      })
-      .catch(() => setGraph({ nodes: [], edges: [] }));
   }, []);
 
   const expandNode = async (node) => {
@@ -213,7 +239,7 @@ export default function App() {
 
   const runQuery = async (rawQuery, { fromInput = false } = {}) => {
     const query = String(rawQuery).trim();
-    if (!query || loading) return;
+    if (!query || loading || graphLoading || graphLoadError) return;
     setMessages((m) => [...m, { id: nextId(), role: "user", text: query }]);
     if (fromInput) setInput("");
     setLoading(true);
@@ -297,6 +323,28 @@ export default function App() {
       </header>
 
       <div className="body">
+        {(graphLoading || graphLoadError) && (
+          <div className="graph-bootstrap-overlay" role="status" aria-live="polite" aria-busy={graphLoading}>
+            <div className="graph-bootstrap-card">
+              {graphLoading ? (
+                <>
+                  <div className="graph-bootstrap-spinner" aria-hidden="true" />
+                  <p className="graph-bootstrap-title">Loading graph</p>
+                  <p className="graph-bootstrap-sub">Fetching Order to Cash data from the API…</p>
+                </>
+              ) : (
+                <>
+                  <p className="graph-bootstrap-title graph-bootstrap-title--error">Graph unavailable</p>
+                  <p className="graph-bootstrap-sub">{graphLoadError}</p>
+                  <button type="button" className="graph-bootstrap-retry" onClick={() => loadFullGraph()}>
+                    Retry
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <section className={`graph-pane ${graphMinimized ? "graph-pane--minimized" : ""}`}>
           <div className="graph-toolbar">
             <button
@@ -409,7 +457,7 @@ export default function App() {
                     key={`${idx}-${q.slice(0, 24)}`}
                     type="button"
                     className="sample-query-chip"
-                    disabled={loading}
+                    disabled={loading || graphLoading || graphLoadError}
                     title={q}
                     onClick={() => runQuery(q)}
                   >
@@ -419,8 +467,17 @@ export default function App() {
               </div>
             </div>
             <div className="chat-status">
-              <span className={`chat-status__dot ${loading ? "chat-status__dot--busy" : ""}`} aria-hidden="true" />
-              {loading ? "Dodge AI is working on your request…" : "Dodge AI is awaiting instructions"}
+              <span
+                className={`chat-status__dot ${loading || graphLoading ? "chat-status__dot--busy" : ""} ${graphLoadError ? "chat-status__dot--error" : ""}`}
+                aria-hidden="true"
+              />
+              {graphLoading
+                ? "Waiting for graph to load…"
+                : graphLoadError
+                  ? "Fix graph loading to use chat"
+                  : loading
+                    ? "Dodge AI is working on your request…"
+                    : "Dodge AI is awaiting instructions"}
             </div>
             <div className="chat-input-shell">
               <textarea
@@ -429,7 +486,7 @@ export default function App() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Analyze anything"
                 rows={3}
-                disabled={loading}
+                disabled={loading || graphLoading || graphLoadError}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -437,7 +494,12 @@ export default function App() {
                   }
                 }}
               />
-              <button type="button" className="chat-send" disabled={loading || !input.trim()} onClick={sendQuery}>
+              <button
+                type="button"
+                className="chat-send"
+                disabled={loading || graphLoading || graphLoadError || !input.trim()}
+                onClick={sendQuery}
+              >
                 Send
               </button>
             </div>

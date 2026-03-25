@@ -2,6 +2,12 @@
 
 This project builds a context graph across order-to-cash entities and provides a natural-language query interface with guardrails.
 
+## Preview working
+<img width="3002" height="1738" alt="image" src="https://github.com/user-attachments/assets/d61bf530-2be3-4a4d-bb7c-8edd0deed982" />
+<img width="3018" height="1732" alt="image" src="https://github.com/user-attachments/assets/fe5a41bf-9291-4ac3-8568-45539b813901" />
+<img width="3018" height="1734" alt="image" src="https://github.com/user-attachments/assets/f1e9366d-de28-4f9d-a680-ea59f5d5cd9b" />
+
+
 ## Architecture decisions
 
 - **Split responsibilities**: The **LLM** only proposes a structured plan (JSON); the **backend** validates and executes it. Answers are always grounded in loaded data, not in free-form model prose about facts.
